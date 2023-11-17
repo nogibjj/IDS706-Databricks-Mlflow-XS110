@@ -1,0 +1,46 @@
+name: CI
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Secrets
+        run: |
+          echo "DATABRICKS_HOST=${{ secrets.SERVER_HOSTNAME }}" >> $GITHUB_ENV
+          echo "DATABRICKS_HTTP_PATH=${{  secrets.HTTP_PATH }}" >> $GITHUB_ENV
+          echo "DATABRICKS_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+          echo "JOB_ID=${{ secrets.JOB_ID }}" >> $GITHUB_ENV
+      - name: install packages
+        run: make install
+      - name: lint
+        run: make lint
+      - name: test
+        run: make test
+      - name: format
+        run: make format
+      - name: deploy
+        run: make deploy
+      - name: run databricks job 
+        run: make job
+      - name: List files
+        run: |
+          pwd
+          ls -R  
+
+      - name: Archive and Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ml_pipeline-artifacts
+          path: ${{ github.workspace }}/output
